@@ -45,7 +45,6 @@ public class CSVReader {
                     row.append(line.charAt(c));
                 }
                 attributeBuilder.append(row);
-                c++;
             }else {
                 attributeBuilder.append(line.charAt(c));
             }

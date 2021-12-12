@@ -3,7 +3,7 @@ package models;
 import abstractions.Model;
 
 public class PassengerModel implements Model {
-    public int id;
+    public int passengerId;
     public boolean survived;
     public int pclass;
     public String name;

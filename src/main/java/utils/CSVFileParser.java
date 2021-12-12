@@ -14,6 +14,7 @@ public class CSVFileParser implements FileParser {
     private String delimiter;
     private CSVModel rawData;
     private CSVReader reader = new CSVReader();
+    private TypeMapper typeMapper = new TypeMapper();
 
     public CSVFileParser(String delimiter){
         this.delimiter = delimiter;
@@ -30,8 +31,6 @@ public class CSVFileParser implements FileParser {
         var result = new ArrayList<Model>();
         for (var row : rawData.data){
             var model = buildNewModel(baseModel, rawData.titles, row);
-            if (model == null)
-                continue;
             result.add(model);
         }
         return result;
@@ -45,12 +44,15 @@ public class CSVFileParser implements FileParser {
         for (var d = 0; d < data.length; d++){
             int finalD = d;
             try {
-                var field = Arrays.stream(fields)
+                var fieldContainer = Arrays.stream(fields)
                         .filter(f -> f.getName().equalsIgnoreCase(titles[finalD]))
-                        .findFirst()
-                        .get();
+                        .findFirst();
+                if (fieldContainer.isEmpty())
+                    continue;
+                var field = fieldContainer.get();
                 field.setAccessible(true);
-                field.set(instance, fields[d].getType().cast(data[d]));
+                var value = typeMapper.mapToNeeded(fields[d].getType(), data[d]);
+                field.set(instance, value);
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             }
@@ -61,7 +63,7 @@ public class CSVFileParser implements FileParser {
     private Model buildNewInstance(Model baseModel){
         var type = baseModel.getClass();
         try {
-            return (Model) Class.forName(type.getName()).getConstructor((Class<?>) null).newInstance();
+            return (Model) Class.forName(type.getName()).getConstructor().newInstance();
         } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
             e.printStackTrace();
         }
