@@ -2,23 +2,69 @@ package utils;
 
 import abstractions.FileParser;
 import abstractions.Model;
+import models.CSVModel;
 
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class CSVFileParser implements FileParser {
-    private ArrayList<ArrayList<String>> rowData;
+    private String delimiter;
+    private CSVModel rawData;
+    private CSVReader reader = new CSVReader();
+
+    public CSVFileParser(String delimiter){
+        this.delimiter = delimiter;
+    }
 
     @Override
     public void parseFile(Path pathToFile) {
-        throw new RuntimeException("Not implemented");
+        this.rawData = this.reader.read(pathToFile, this.delimiter);
     }
 
     @Override
     public List<Model> buildModels(Model baseModel) {
         var type = baseModel.getClass();
+        var result = new ArrayList<Model>();
+        for (var row : rawData.data){
+            var model = buildNewModel(baseModel, rawData.titles, row);
+            if (model == null)
+                continue;
+            result.add(model);
+        }
+        return result;
+    }
+
+    private Model buildNewModel(Model baseModel, String[] titles, String[] data){
+        var instance = buildNewInstance(baseModel);
+        assert instance != null;
+        var type = instance.getClass();
         var fields = type.getDeclaredFields();
-        //TODO: достроить модель
+        for (var d = 0; d < data.length; d++){
+            int finalD = d;
+            try {
+                var field = Arrays.stream(fields)
+                        .filter(f -> f.getName().equalsIgnoreCase(titles[finalD]))
+                        .findFirst()
+                        .get();
+                field.setAccessible(true);
+                field.set(instance, fields[d].getType().cast(data[d]));
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+        return instance;
+    }
+
+    private Model buildNewInstance(Model baseModel){
+        var type = baseModel.getClass();
+        try {
+            return (Model) Class.forName(type.getName()).getConstructor((Class<?>) null).newInstance();
+        } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }
