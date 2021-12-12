@@ -19,6 +19,7 @@ public class CSVReader {
                 var objectAttributes = parseLine(line, delimiter.charAt(0));
                 allAttributes.add(objectAttributes);
             }
+            scanner.close();
             var model = new CSVModel();
             model.titles = titles;
             model.data = allAttributes.toArray(String[][]::new);
@@ -44,7 +45,6 @@ public class CSVReader {
                     row.append(line.charAt(c));
                 }
                 attributeBuilder.append(row);
-                c++;
             }else {
                 attributeBuilder.append(line.charAt(c));
             }
