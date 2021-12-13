@@ -38,7 +38,7 @@ public class TypeMapper {
     }
 
     public String mapToString(String input, String defaultValue){
-        return input.equals("") ? defaultValue : input;
+        return input.isEmpty() ? defaultValue : input;
     }
 
     public boolean mapToBool(String input, boolean defaultValue){
