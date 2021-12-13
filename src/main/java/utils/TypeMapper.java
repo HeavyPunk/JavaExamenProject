@@ -9,7 +9,7 @@ public class TypeMapper {
         availableMappers.put("int", input -> mapToInt(input, -1));
         availableMappers.put("float", input -> mapToFloat(input, -1));
         availableMappers.put("boolean", input -> mapToBool(input, false));
-        availableMappers.put("string", input -> input);
+        availableMappers.put("string", input -> mapToString(input, null));
     }
 
     public Object mapToNeeded(Class neededType, String input){
@@ -35,6 +35,10 @@ public class TypeMapper {
         }catch (RuntimeException e){
             return defaultValue;
         }
+    }
+
+    public String mapToString(String input, String defaultValue){
+        return input.equals("") ? defaultValue : input;
     }
 
     public boolean mapToBool(String input, boolean defaultValue){
