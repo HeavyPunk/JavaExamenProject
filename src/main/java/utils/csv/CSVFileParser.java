@@ -1,9 +1,10 @@
-package utils;
+package utils.csv;
 
 import abstractions.Deserializer;
 import abstractions.FileParser;
 import abstractions.Model;
 import models.CSVModel;
+import utils.ModelBuilder;
 
 import java.nio.file.Path;
 import java.util.ArrayList;

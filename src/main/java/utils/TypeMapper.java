@@ -3,20 +3,35 @@ package utils;
 import java.util.HashMap;
 
 public class TypeMapper {
-    private HashMap<String, Mapper> availableMappers = new HashMap<>();
+    private HashMap<String, fromStringMapper> fromStringMappers = new HashMap<>();
+    private HashMap<String, ToStringMapper> toStringMappers = new HashMap<>();
 
     public TypeMapper(){
-        availableMappers.put("int", input -> mapToInt(input, -1));
-        availableMappers.put("float", input -> mapToFloat(input, -1));
-        availableMappers.put("boolean", input -> mapToBool(input, false));
-        availableMappers.put("string", input -> mapToString(input, null));
+        fromStringMappers.put("int", input -> mapToInt(input, -1));
+        fromStringMappers.put("float", input -> mapToFloat(input, -1));
+        fromStringMappers.put("boolean", input -> mapToBool(input, false));
+        fromStringMappers.put("string", input -> mapToString(input, null));
+
+        toStringMappers.put("integer", input -> Integer.toString((int) input));
+        toStringMappers.put("float", input -> Float.toString((float) input));
+        toStringMappers.put("boolean", input -> Boolean.toString((boolean) input));
+        toStringMappers.put("string", input -> String.format("%s", input));
     }
 
     public Object mapToNeeded(Class neededType, String input){
         var name = neededType.getSimpleName();
-        if (!availableMappers.containsKey(name.toLowerCase()))
+        if (!fromStringMappers.containsKey(name.toLowerCase()))
             throw new RuntimeException(String.format("Cannot cast to %s object %s", name, input));
-        return availableMappers.get(name.toLowerCase()).map(input);
+        return fromStringMappers.get(name.toLowerCase()).map(input);
+    }
+
+    public String mapToString(Object obj){
+        if (obj == null)
+            return null;
+        var typeName = obj.getClass().getSimpleName();
+        if (!toStringMappers.containsKey(typeName.toLowerCase()))
+            throw new RuntimeException(String.format("Cannot convert to string the type %s", typeName));
+        return toStringMappers.get(typeName.toLowerCase()).map(obj);
     }
 
     public int mapToInt(String input, int defaultValue){
@@ -38,7 +53,7 @@ public class TypeMapper {
     }
 
     public String mapToString(String input, String defaultValue){
-        return input.isEmpty() ? defaultValue : input;
+        return input == null || input.isEmpty() ? defaultValue : input;
     }
 
     public boolean mapToBool(String input, boolean defaultValue){
@@ -56,7 +71,12 @@ public class TypeMapper {
     }
 
     @FunctionalInterface
-    private interface Mapper{
+    private interface fromStringMapper {
         Object map(String input);
+    }
+
+    @FunctionalInterface
+    private interface ToStringMapper{
+        String map(Object input);
     }
 }
