@@ -59,7 +59,6 @@ public class SqliteDBWorker implements DBWorker {
     public void addModel(String tableName, Model model) {
         var fields = model.getClass().getDeclaredFields();
         var fieldsNames = Arrays.stream(fields).map(Field::getName).toArray(String[]::new);
-        //TODO:получить значения из модели и преобразовать в string
         var values = Arrays.stream(fields)
                 .map(f -> {
                     try {
