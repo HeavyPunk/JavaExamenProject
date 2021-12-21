@@ -4,11 +4,11 @@ import java.util.Arrays;
 import java.util.List;
 
 public class QueryConstructor {
-    public String select(String[] fields, String tableName, String wherePredicate){ //TODO: переделать wherePredicate на lambda
+    public Query select(String[] fields, String tableName){ //TODO: переделать wherePredicate на lambda
         var fieldsStr = String.join(", ", fields);
-        return wherePredicate == null
-                ? String.format("SELECT %s FROM %s", fieldsStr, tableName)
-                : String.format("SELECT %s FROM %s WHERE %s", fieldsStr, tableName, wherePredicate);
+        var queryStart = String.format("SELECT %s FROM %s;", fieldsStr, tableName);
+        var result = new Query(queryStart);
+        return result;
     }
 
     public String insert(String tableName, String[] fields, List<String[]> values){
