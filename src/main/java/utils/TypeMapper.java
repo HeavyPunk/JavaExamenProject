@@ -3,7 +3,7 @@ package utils;
 import java.util.HashMap;
 
 public class TypeMapper {
-    private HashMap<String, fromStringMapper> fromStringMappers = new HashMap<>();
+    private HashMap<String, FromStringMapper> fromStringMappers = new HashMap<>();
     private HashMap<String, ToStringMapper> toStringMappers = new HashMap<>();
 
     public TypeMapper(){
@@ -71,7 +71,7 @@ public class TypeMapper {
     }
 
     @FunctionalInterface
-    private interface fromStringMapper {
+    private interface FromStringMapper {
         Object map(String input);
     }
 
