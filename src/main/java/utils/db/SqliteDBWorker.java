@@ -48,7 +48,9 @@ public class SqliteDBWorker implements DBWorker {
         var fieldsWithMeta = Arrays.stream(fields)
                 .map(f -> new String[]{f.getName(), this.DBtypeMapper.map(f.getType().getSimpleName())})
                 .toList();
-        var selectAllQuery = queryConstructor.select(new String[]{"*"}, tableName, null);
+        var selectAllQuery = queryConstructor
+                .select(new String[]{"*"}, tableName)
+                .buildQuery();
         var createTableQuery = queryConstructor.createTable(tableName, fieldsWithMeta, primaryKeyField);
         if (!executeQueryWithoutResult(selectAllQuery, System.out)){
             executeQueryWithoutResult(createTableQuery, System.out);
@@ -100,7 +102,10 @@ public class SqliteDBWorker implements DBWorker {
     @Override
     public List<Model> getAllModels(String wherePredicate, Model baseModel) {
         var fields = baseModel.getClass().getDeclaredFields();
-        var selectQuery = queryConstructor.select(new String[]{"*"}, "Passengers", wherePredicate);
+        var selectQuery = queryConstructor
+                .select(new String[]{"*"}, "Passengers")
+                .where(wherePredicate)
+                .buildQuery();
         try(var statement = this.connection.createStatement()){
             var queryResult = statement.executeQuery(selectQuery);
             var resultList = new ArrayList<String[]>();
