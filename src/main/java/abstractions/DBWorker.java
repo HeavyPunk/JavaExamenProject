@@ -7,4 +7,5 @@ public interface DBWorker {
     void addModel(String tableName, Model model);
     void addModels(String tableName, List<Model> models);
     List<Model> getAllModels(String wherePredicate, Model baseModel);
+    List<Model> executeSqlQuery(String sqlQuery, Model baseModel);
 }

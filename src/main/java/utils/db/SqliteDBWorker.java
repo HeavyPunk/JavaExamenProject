@@ -12,6 +12,7 @@ import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -108,24 +109,55 @@ public class SqliteDBWorker implements DBWorker {
                 .buildQuery();
         try(var statement = this.connection.createStatement()){
             var queryResult = statement.executeQuery(selectQuery);
-            var resultList = new ArrayList<String[]>();
-            while (queryResult.next()){
-                var res = new ArrayList<String>();
-                for(var f : fields){
-                    res.add(queryResult.getString(f.getName()));
-                }
-                resultList.add(res.toArray(String[]::new));
-            }
-            var allModels = new ArrayList<Model>();
-            for (var modelData : resultList) {
-                var model = modelBuilder.buildNewModel(baseModel, Arrays.stream(fields).map(Field::getName).toArray(String[]::new), modelData);
-                allModels.add(model);
-            }
-            return allModels;
+            return buildModelsFromResultSet(queryResult, baseModel);
         }catch (SQLException e){
             e.printStackTrace();
         }
         return null;
+    }
+
+    @Override
+    public List<Model> executeSqlQuery(String sqlQuery, Model baseModel) {
+        try (var statement = this.connection.createStatement()){
+            if (baseModel == null) {
+                statement.execute(sqlQuery);
+                return null;
+            }
+            else{
+                var resultSet = statement.executeQuery(sqlQuery);
+                return buildModelsFromResultSet(resultSet, baseModel);
+            }
+        }catch (SQLException e){
+
+        }
+        return null;
+    }
+
+    private ArrayList<Model> buildModelsFromResultSet(ResultSet queryResult, Model baseModel){
+        var fields = baseModel.getClass().getDeclaredFields();
+        var resultList = new ArrayList<String[]>();
+        try {
+            while (queryResult.next()) {
+                var res = new ArrayList<String>();
+                for (var f : fields) {
+                    try{
+                        var value = queryResult.getString(f.getName());
+                        res.add(value);
+                    }catch (SQLException ignored){
+                        res.add(null);
+                    }
+                }
+                resultList.add(res.toArray(String[]::new));
+            }
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+        var allModels = new ArrayList<Model>();
+        for (var modelData : resultList) {
+            var model = modelBuilder.buildNewModel(baseModel, Arrays.stream(fields).map(Field::getName).toArray(String[]::new), modelData);
+            allModels.add(model);
+        }
+        return allModels;
     }
 
     private boolean executeQueryWithoutResult(String query, PrintStream errorsOut){
