@@ -1,7 +1,7 @@
-import abstractions.DBWorker;
 import models.FirstTaskModel_avg;
-import models.FirstTaskModel_sum;
 import models.PassengerModel;
+import models.SecondTask;
+import models.ThirdTask;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartUtils;
 import org.jfree.chart.plot.PlotOrientation;
@@ -13,7 +13,6 @@ import utils.db.SqliteDBWorker;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.List;
 
 public class Main {
     private static final String tableName = "Passengers";
@@ -26,29 +25,37 @@ public class Main {
         dbWorker.configureDB(tableName, new PassengerModel(), "PassengerId");
         dbWorker.addModels(tableName, models);
         var dbModels = dbWorker.getAllModels(null, new PassengerModel());
-        task1(dbWorker);
+        task1();
+        task2();
+        task3();
     }
 
-    public static void task1(DBWorker dbWorker){
+    public static void task1(){
+        var dbWorker = SqliteDBWorker.getInstance();
         var sqlConstructor = new QueryConstructor();
-        var queryWithAvg = sqlConstructor
+        var query = sqlConstructor
                 .select(new String[]{"sex", "embarked", "avg(fare) AS avg"}, tableName)
+                .where("embarked is not null")
                 .groupBy(new String[]{"embarked", "sex"})
                 .buildQuery();
-        var variantWithAvg = dbWorker.executeSqlQuery(queryWithAvg, new FirstTaskModel_avg());
+        var variantWithAvg = dbWorker.executeSqlQuery(query, new FirstTaskModel_avg()).stream()
+                .map(model -> {
+                    var fmodel = (FirstTaskModel_avg) model;
+                    fmodel.embarked = fmodel.embarked.equals("S")
+                            ? "Southampton"
+                            : fmodel.embarked.equals("C")
+                                ? "Cherbourg"
+                                : "Queenstown";
+                    return fmodel;
+                })
+                .toList();
 
-        var queryWithSum = sqlConstructor
-                .select(new String[]{"sex", "embarked", "sum(fare) as sum"}, tableName)
-                .groupBy(new String[]{"embarked", "sex"})
-                .buildQuery();
-        var variantWithSum = dbWorker.executeSqlQuery(queryWithSum, new FirstTaskModel_sum());
         var dataset = new DefaultCategoryDataset();
-        for (var model : variantWithSum){
-            var firstTaskModel_sum = (FirstTaskModel_sum) model;
+        for (var model : variantWithAvg){
             dataset.addValue(
-                    firstTaskModel_sum.sum,
-                    firstTaskModel_sum.embarked == null ? "null" : firstTaskModel_sum.embarked,
-                    firstTaskModel_sum.sex == null ? "null" : firstTaskModel_sum.sex
+                    model.avg,
+                    model.embarked == null ? "null" : model.embarked,
+                    model.sex == null ? "null" : model.sex
             );
         }
         var barChart = ChartFactory.createBarChart(
@@ -59,31 +66,36 @@ public class Main {
                 PlotOrientation.VERTICAL,
                 true, true, false);
         try {
-            ChartUtils.saveChartAsPNG(new File("task_1_sum.png"), barChart, 640, 480);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        dataset = new DefaultCategoryDataset();
-        for (var model : variantWithAvg){
-            var firstTaskModel_avg = (FirstTaskModel_avg) model;
-            dataset.addValue(
-                    firstTaskModel_avg.avg,
-                    firstTaskModel_avg.embarked == null ? "null" : firstTaskModel_avg.embarked,
-                    firstTaskModel_avg.sex == null ? "null" : firstTaskModel_avg.sex
-            );
-        }
-        barChart = ChartFactory.createBarChart(
-                "Цена билетов пассажиров",
-                "Группы пассажиров",
-                "Цена",
-                dataset,
-                PlotOrientation.VERTICAL,
-                true, true, false);
-        try {
             ChartUtils.saveChartAsPNG(new File("task_1_avg.png"), barChart, 640, 480);
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    public static void task2(){
+        var dbWorker = SqliteDBWorker.getInstance();
+        var sqlConstructor = new QueryConstructor();
+        var query = sqlConstructor
+                .select(new String[]{"max(fare) - min(fare) as 'diff'"}, tableName)
+                .where("sex = 'female' and age between 15 and 30")
+                .buildQuery();
+        var result = dbWorker.executeSqlQuery(query, new SecondTask());
+        var model = (SecondTask) result.get(0);
+        System.out.format("Разница между максимальной и минимальной ценой билета у женщин от 15 до 30 лет: %f\n", model.diff);
+    }
+
+    public static void task3(){
+        var dbWorker = SqliteDBWorker.getInstance();
+        var sqlConstructor = new QueryConstructor();
+        var query = sqlConstructor
+                .select(new String[]{"ticket"}, tableName)
+                .where("(sex = 'male' and age between 45 and 60) or (sex = 'female' and age between 20 and 25)")
+                .buildQuery();
+        var result = dbWorker.executeSqlQuery(query, new ThirdTask());
+        System.out.println("Список билетов, мужчин в возрасте от 45 до 60 и женщин от 20 до 25.");
+        for (var m : result){
+            var model = (ThirdTask) m;
+            System.out.println(model.ticket);
         }
     }
 }
